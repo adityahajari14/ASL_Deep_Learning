@@ -5,13 +5,16 @@ from time import monotonic
 import csv
 import io
 import hashlib
+import json
 import logging
+import re
+import urllib.request
 import numpy as np
 import streamlit as st
 from PIL import Image, ImageOps
 # Load WebRTC native libraries before the ML stack to avoid symbol conflicts.
 # model.py then selects the Keras backend before MediaPipe is imported.
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, get_hf_ice_servers
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from model import SignModel
 from hand_detector import get_hand_model
 from recognition import Recognizer, Settings
@@ -34,26 +37,44 @@ def load_resources():
 
 def secret(name):
     try:
-        return st.secrets.get(name, '')
+        return str(st.secrets.get(name, '')).strip()
     except FileNotFoundError:
         return ''
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def cloudflare_ice_servers(key_id, api_token):
+    request = urllib.request.Request(
+        f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate-ice-servers',
+        data=json.dumps({'ttl': 86400}).encode(), method='POST',
+        headers={'Authorization': f'Bearer {api_token}', 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=10) as response:
+        servers = json.load(response)['iceServers']
+    for server in servers:
+        urls = server['urls'] if isinstance(server['urls'], list) else [server['urls']]
+        # Port 53 entries time out in browsers; Cloudflare recommends dropping them.
+        server['urls'] = [url for url in urls if not re.search(r':53(\?|$)', url)]
+    return [server for server in servers if server['urls']]
+
+
 def ice_servers():
-    """Return (servers, has_relay).
+    """Return (servers, status) where status is 'ok', 'missing' or 'failed'.
 
     Streamlit Cloud cannot accept direct WebRTC traffic, so a TURN relay is
     required there. STUN alone leaves the camera stuck after START.
     """
-    if secret('TURN_URL'):
-        return [STUN, {'urls': [secret('TURN_URL')], 'username': secret('TURN_USERNAME'),
-                       'credential': secret('TURN_PASSWORD')}], True
-    if secret('HF_TOKEN'):
+    if secret('CLOUDFLARE_TURN_KEY_ID') and secret('CLOUDFLARE_TURN_API_TOKEN'):
         try:
-            return get_hf_ice_servers(token=secret('HF_TOKEN')) + [STUN], True
+            return cloudflare_ice_servers(secret('CLOUDFLARE_TURN_KEY_ID'),
+                                          secret('CLOUDFLARE_TURN_API_TOKEN')), 'ok'
         except Exception:
-            logging.exception('Could not get TURN credentials from Hugging Face')
-    return [STUN], False
+            logging.exception('Could not get TURN credentials from Cloudflare')
+            return [STUN], 'failed'
+    if secret('TURN_URL'):
+        urls = [url.strip() for url in secret('TURN_URL').split(',') if url.strip()]
+        return [STUN, {'urls': urls, 'username': secret('TURN_USERNAME'),
+                       'credential': secret('TURN_PASSWORD')}], 'ok'
+    return [STUN], 'missing'
 
 
 with st.sidebar:
@@ -106,7 +127,7 @@ def show_result(result, live=False):
 
 left, right = st.columns([1.7, 1], gap='large')
 if mode == 'Live camera':
-    servers, has_relay = ice_servers()
+    servers, relay = ice_servers()
     with left:
         st.subheader('Live camera')
         ctx = webrtc_streamer(
@@ -119,9 +140,12 @@ if mode == 'Live camera':
         )
         if ctx.video_processor:
             ctx.video_processor.configure(settings)
-        if not has_relay:
+        if relay == 'missing':
             st.warning('Live video relay is not configured, so the camera may not connect. '
                        'Use **Photo test** instead, or see the README to enable it.')
+        elif relay == 'failed':
+            st.warning('The live video relay could not be reached. Use **Photo test** '
+                       'or try again shortly.')
     with right:
         st.subheader('Prediction')
 

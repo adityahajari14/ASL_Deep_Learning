@@ -16,16 +16,21 @@ A GitHub/Streamlit account and deployment action are still required. This packag
 
 Streamlit Community Cloud blocks direct WebRTC connections, so the camera will not start after pressing START unless a TURN relay is configured. The app shows a warning when none is set.
 
-Easiest option (free): create a Hugging Face account, make an access token at https://huggingface.co/settings/tokens (type "Read"), then in Streamlit → your app → **Settings → Secrets** add:
+Recommended option: Cloudflare TURN (free tier).
+
+1. Sign in at https://dash.cloudflare.com and open **Realtime → TURN Server** (formerly "Calls").
+2. Create a TURN key. Copy the **Turn Token ID** and the **API Token** (shown only once).
+3. In Streamlit → your app → **Settings → Secrets** add:
 
 ```toml
-HF_TOKEN = "hf_..."
+CLOUDFLARE_TURN_KEY_ID = "your-turn-token-id"
+CLOUDFLARE_TURN_API_TOKEN = "your-api-token"
 ```
 
-Or, if you have your own TURN service:
+Or, if you have another TURN provider (for example Metered), use its static credentials. Separate several URLs with commas:
 
 ```toml
-TURN_URL = "turns:your-relay-host:5349"
+TURN_URL = "turn:your-relay-host:80,turns:your-relay-host:443"
 TURN_USERNAME = "your-username"
 TURN_PASSWORD = "your-password"
 ```
