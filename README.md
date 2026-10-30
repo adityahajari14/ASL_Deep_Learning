@@ -12,11 +12,17 @@ A simple Streamlit interface for the existing college-project model. It supports
 
 A GitHub/Streamlit account and deployment action are still required. This package is not itself a published URL. Free hosting runs on shared CPU resources and can sleep; it does not guarantee a particular frame rate or capacity.
 
-### Camera stuck on “connecting”
+### Enable the live camera (required on Streamlit Cloud)
 
-A public STUN server is configured. Some networks, including cloud-hosted deployments, also require a TURN relay. Photo test works over normal HTTPS and does not require a WebRTC relay.
+Streamlit Community Cloud blocks direct WebRTC connections, so the camera will not start after pressing START unless a TURN relay is configured. The app shows a warning when none is set.
 
-If you already have TURN service credentials, enter these through Streamlit's app settings → Secrets (never in a public repository):
+Easiest option (free): create a Hugging Face account, make an access token at https://huggingface.co/settings/tokens (type "Read"), then in Streamlit → your app → **Settings → Secrets** add:
+
+```toml
+HF_TOKEN = "hf_..."
+```
+
+Or, if you have your own TURN service:
 
 ```toml
 TURN_URL = "turns:your-relay-host:5349"
@@ -24,7 +30,7 @@ TURN_USERNAME = "your-username"
 TURN_PASSWORD = "your-password"
 ```
 
-Use credentials supplied by your provider, rotate them as required, and follow that provider's usage limits. No paid relay account is created by this project. If live video fails, try Photo test and inspect the Streamlit logs rather than assuming the model failed.
+Save, then reboot the app. Never commit these values to GitHub. Photo test works without a relay.
 
 ## Run locally for inference tests (optional)
 
