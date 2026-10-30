@@ -47,7 +47,9 @@ def cloudflare_ice_servers(key_id, api_token):
     request = urllib.request.Request(
         f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate-ice-servers',
         data=json.dumps({'ttl': 86400}).encode(), method='POST',
-        headers={'Authorization': f'Bearer {api_token}', 'Content-Type': 'application/json'})
+        # Cloudflare rejects Python's default User-Agent (error 1010), so set our own.
+        headers={'Authorization': f'Bearer {api_token}', 'Content-Type': 'application/json',
+                 'User-Agent': 'asl-recognition-app/1.0'})
     with urllib.request.urlopen(request, timeout=10) as response:
         servers = json.load(response)['iceServers']
     for server in servers:
