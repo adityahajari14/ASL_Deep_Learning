@@ -1,0 +1,43 @@
+{
+  "classes": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "nothing"
+  ],
+  "image_size": 160,
+  "colour_order": "RGB",
+  "pixel_range": [
+    0,
+    255
+  ],
+  "resize": "aspect-preserving resize_with_pad",
+  "score_threshold": 0.75,
+  "vote_window": 7,
+  "required_votes": 5,
+  "hand_crop_margin": 0.2,
+  "threshold_status": "initial heuristic; not calibrated",
+  "context_crop_scale": 1.8,
+  "context_wrist_shift": 0.15
+}

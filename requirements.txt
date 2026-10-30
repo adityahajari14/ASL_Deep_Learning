@@ -1,0 +1,16 @@
+streamlit==1.45.1
+streamlit-webrtc==0.62.4
+tensorflow-cpu==2.19.1
+keras==3.15.1
+mediapipe==1.1.1
+numpy==1.26.4
+protobuf==4.25.8
+opencv-contrib-python==4.11.0.86
+h5py==3.14.0
+Pillow==11.3.0
+
+pyarrow==19.0.1
+pandas==2.2.3
+aiortc==1.15.0
+av==17.1.0
+pylibsrtp==1.0.0
