@@ -76,7 +76,7 @@ class Recognizer:
         if stable:
             reason = 'Recognized' if use_voting else 'Single photo prediction'
         result = {'label': stable, 'status': reason, 'top': top, 'crop': preview,
-                  'settings': settings, 'time': monotonic()}
+                  'settings': settings, 'bounds': bounds, 'time': monotonic()}
         display = rgb.copy()
         if bounds:
             x0, y0, x1, y1 = bounds
