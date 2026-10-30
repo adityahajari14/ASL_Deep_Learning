@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import re
+import urllib.error
 import urllib.request
 import numpy as np
 import streamlit as st
@@ -69,8 +70,14 @@ def ice_servers():
         try:
             return cloudflare_ice_servers(secret('CLOUDFLARE_TURN_KEY_ID'),
                                           secret('CLOUDFLARE_TURN_API_TOKEN')), 'ok'
-        except Exception:
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors='replace')[:200]
+            logging.error('Cloudflare TURN request failed: HTTP %s %s', exc.code, detail)
+            st.session_state.relay_error = f'Cloudflare HTTP {exc.code}: {detail}'
+            return [STUN], 'failed'
+        except Exception as exc:
             logging.exception('Could not get TURN credentials from Cloudflare')
+            st.session_state.relay_error = f'{type(exc).__name__}: {exc}'
             return [STUN], 'failed'
     if secret('TURN_URL'):
         urls = [url.strip() for url in secret('TURN_URL').split(',') if url.strip()]
@@ -148,6 +155,8 @@ if mode == 'Live camera':
         elif relay == 'failed':
             st.warning('The live video relay could not be reached. Use **Photo test** '
                        'or try again shortly.')
+            with st.expander('Technical details'):
+                st.code(st.session_state.get('relay_error', 'Unknown error'))
     with right:
         st.subheader('Prediction')
 
